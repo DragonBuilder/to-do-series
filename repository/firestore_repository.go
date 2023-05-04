@@ -10,10 +10,13 @@ import (
 	firebase "firebase.google.com/go"
 	"github.com/DragonBuilder/to-do-series/domain"
 	"github.com/google/uuid"
+	"google.golang.org/api/iterator"
 	"google.golang.org/api/option"
 )
 
-// var firestoreClient *firestore.Client
+const (
+	taskTable string = "task"
+)
 
 type firestoreClient struct {
 	*firestore.Client
@@ -39,14 +42,33 @@ type taskFirestoreRepository struct {
 	client *firestoreClient
 }
 
-func (r *taskFirestoreRepository) Save(ctx context.Context, task *domain.Task) error {
+func (r *taskFirestoreRepository) Create(ctx context.Context, task *domain.Task) error {
 	task.UID = uuid.New().String()
 	task.CreatedAt = time.Now()
 	task.UpdatedAt = time.Now()
-	if _, err := r.client.Collection("tasks").Doc(task.UID).Set(ctx, task); err != nil {
-		return fmt.Errorf("error saving task : %v", err)
+	if _, err := r.client.Collection(taskTable).Doc(task.UID).Set(ctx, task); err != nil {
+		return fmt.Errorf("error saving task to table %s : %v", taskTable, err)
 	}
 	return nil
+}
+
+func (r *taskFirestoreRepository) Read(ctx context.Context, uid string) (*domain.Task, error) {
+	iter := r.client.Collection(taskTable).Where("UID", "==", uid).Documents(ctx)
+	var t domain.Task
+	for {
+		doc, err := iter.Next()
+		if err == iterator.Done {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("error fetching data from Tasks iterator : %v", err)
+		}
+		if err = doc.DataTo(&t); err != nil {
+			return nil, fmt.Errorf("error unmarshalling data to Task struct : %v", err)
+		}
+		return &t, nil
+	}
+	return nil, fmt.Errorf("error fetching Task with UID %s", uid)
 }
 
 // func initFirestore() error {

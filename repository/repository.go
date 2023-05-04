@@ -22,7 +22,8 @@ type client interface {
 }
 
 type TaskRepository interface {
-	Save(ctx context.Context, task *domain.Task) error
+	Create(ctx context.Context, task *domain.Task) error
+	Read(ctx context.Context, uid string) (*domain.Task, error)
 }
 
 func NewTaskRepository() TaskRepository {
