@@ -1,3 +1,3 @@
 # Local .env
-export $(xargs < dev.env)
+export $(xargs < .env.dev)
 go run .

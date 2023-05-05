@@ -15,7 +15,7 @@ import (
 )
 
 const (
-	taskTable string = "task"
+	tasksTable string = "tasks"
 )
 
 type firestoreClient struct {
@@ -38,6 +38,13 @@ func (f *firestoreClient) Connect() error {
 	return nil
 }
 
+func (f *firestoreClient) Close() error {
+	if err := f.Client.Close(); err != nil {
+		return fmt.Errorf("error closing firestore client : %v", err)
+	}
+	return nil
+}
+
 type taskFirestoreRepository struct {
 	client *firestoreClient
 }
@@ -46,14 +53,14 @@ func (r *taskFirestoreRepository) Create(ctx context.Context, task *domain.Task)
 	task.UID = uuid.New().String()
 	task.CreatedAt = time.Now()
 	task.UpdatedAt = time.Now()
-	if _, err := r.client.Collection(taskTable).Doc(task.UID).Set(ctx, task); err != nil {
-		return fmt.Errorf("error saving task to table %s : %v", taskTable, err)
+	if _, err := r.client.Collection(tasksTable).Doc(task.UID).Set(ctx, task); err != nil {
+		return fmt.Errorf("error saving task to table %s : %v", tasksTable, err)
 	}
 	return nil
 }
 
 func (r *taskFirestoreRepository) Read(ctx context.Context, uid string) (*domain.Task, error) {
-	iter := r.client.Collection(taskTable).Where("UID", "==", uid).Documents(ctx)
+	iter := r.client.Collection(tasksTable).Where("UID", "==", uid).Documents(ctx)
 	var t domain.Task
 	for {
 		doc, err := iter.Next()

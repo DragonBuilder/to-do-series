@@ -19,6 +19,7 @@ func init() {
 
 type client interface {
 	Connect() error
+	Close() error
 }
 
 type TaskRepository interface {
