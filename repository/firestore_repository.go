@@ -78,6 +78,24 @@ func (r *taskFirestoreRepository) Read(ctx context.Context, uid string) (*domain
 	return nil, fmt.Errorf("error fetching Task with UID %s", uid)
 }
 
+func (r *taskFirestoreRepository) Update(ctx context.Context, new domain.Task) (*domain.Task, error) {
+	if new.UID == "" {
+		return nil, fmt.Errorf("cannot update Task without a UID")
+	}
+	existing, err := r.Read(ctx, new.UID)
+	if err != nil {
+		return nil, fmt.Errorf("error finding the task with UID %s : %v", new.UID, err)
+	}
+	existing.Content = new.Content
+	existing.Priority = new.Priority
+	existing.Status = new.Status
+	existing.UpdatedAt = time.Now()
+	if _, err := r.client.Collection(tasksTable).Doc(existing.UID).Set(ctx, existing); err != nil {
+		return nil, fmt.Errorf("error updating task with UID %s to table %s : %v", existing.UID, tasksTable, err)
+	}
+	return existing, nil
+}
+
 // func initFirestore() error {
 // 	// Use a service account
 // 	ctx := context.Background()

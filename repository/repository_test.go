@@ -6,6 +6,7 @@ import (
 
 	"github.com/DragonBuilder/to-do-series/domain"
 	"github.com/google/uuid"
+	"github.com/stretchr/testify/assert"
 	"google.golang.org/api/iterator"
 )
 
@@ -137,4 +138,78 @@ func Test_TaskRepository_Read(t *testing.T) {
 			}
 		})
 	}
+}
+
+func Test_TaskRepository_Update(t *testing.T) {
+	t.Run("Should update a task if the correct UID is given", func(t *testing.T) {
+		ogTask := &domain.Task{
+			Content:  "Random content, will be updated",
+			Status:   domain.TaskIncomplete,
+			Priority: 2,
+		}
+		r := NewTaskRepository()
+		err := r.Create(context.Background(), ogTask)
+		assert.NoError(t, err)
+
+		updatedTask := domain.Task{
+			Model: domain.Model{
+				UID: ogTask.UID,
+			},
+			Content:  "Updated Content",
+			Status:   domain.TaskCompleted,
+			Priority: 1,
+		}
+
+		_, err = r.Update(context.Background(), updatedTask)
+		assert.NoError(t, err)
+
+		got, err := r.Read(context.Background(), ogTask.UID)
+		assert.NoError(t, err)
+		assert.Equal(t, updatedTask.Content, got.Content)
+		assert.Equal(t, updatedTask.Status, got.Status)
+		assert.Equal(t, updatedTask.Priority, got.Priority)
+	})
+
+	t.Run("Should return an error if the UID is empty on the Task with updated details", func(t *testing.T) {
+		ogTask := &domain.Task{
+			Content:  "Random content, will be updated",
+			Status:   domain.TaskIncomplete,
+			Priority: 2,
+		}
+		r := NewTaskRepository()
+		err := r.Create(context.Background(), ogTask)
+		assert.NoError(t, err)
+
+		updatedTask := domain.Task{
+			Content:  "Updated Content",
+			Status:   domain.TaskCompleted,
+			Priority: 1,
+		}
+
+		_, err = r.Update(context.Background(), updatedTask)
+		assert.Error(t, err)
+	})
+
+	t.Run("Should return an error if the Task with UID doesn't exist", func(t *testing.T) {
+		ogTask := &domain.Task{
+			Content:  "Random content, will be updated",
+			Status:   domain.TaskIncomplete,
+			Priority: 2,
+		}
+		r := NewTaskRepository()
+		err := r.Create(context.Background(), ogTask)
+		assert.NoError(t, err)
+
+		updatedTask := domain.Task{
+			Model: domain.Model{
+				UID: "random-non-existent" + uuid.New().String(),
+			},
+			Content:  "Updated Content",
+			Status:   domain.TaskCompleted,
+			Priority: 1,
+		}
+
+		_, err = r.Update(context.Background(), updatedTask)
+		assert.Error(t, err)
+	})
 }
